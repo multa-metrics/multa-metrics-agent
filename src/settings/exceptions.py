@@ -1,0 +1,2 @@
+class MqttConnectionError(Exception):
+    pass
