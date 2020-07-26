@@ -1,2 +1,17 @@
 venv/
 .idea/
+.DS_Store
+src/handlers/__pycache__/
+src/settings/__pycache__/
+
+src/local_test_manologomezborges.py
+
+src/local_test_u93.py
+
+certificate.pem
+
+private_key_key.priv
+
+public_key.pub
+
+root_ca.cert

@@ -1,10 +1,25 @@
-import sys
 import json
+import sys
+import traceback
 
 from src.handlers.logging_handler import Logger
 
 logs_handler = Logger()
 logger = logs_handler.get_logger()
+
+
+class ApplicationHandler:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def application_restart() -> None:
+        logger.error("OFFLINE REQUEST TRIGGERED - EXITING")
+        sys.exit(1)
+
+    @staticmethod
+    def application_offline_log() -> None:
+        logger.error("OFFLINE REQUEST TRIGGERED - LOGGING")
 
 
 def flatten_dictionary(dd, separator="_", prefix=""):
@@ -19,21 +34,7 @@ def flatten_dictionary(dd, separator="_", prefix=""):
     )
 
 
-class ApplicationHandler:
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def application_restart():
-        logger.error("OFFLINE REQUEST TRIGGERED - EXITING")
-        sys.exit(1)
-
-    @staticmethod
-    def application_offline_log():
-        logger.error("OFFLINE REQUEST TRIGGERED - LOGGING")
-
-
-def get_size(bytes_, suffix="B"):
+def get_size(bytes_: int, suffix="B") -> str:
     """
     Scale bytes to its proper format
     e.g:
@@ -47,20 +48,6 @@ def get_size(bytes_, suffix="B"):
         bytes_ /= factor
 
 
-class ApplicationHandler:
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def application_restart():
-        logger.error("OFFLINE REQUEST TRIGGERED - EXITING")
-        sys.exit(1)
-
-    @staticmethod
-    def application_offline_log():
-        logger.error("OFFLINE REQUEST TRIGGERED - LOGGING")
-
-
 def read_file():
     try:
         with open("bandwidth.txt") as file:
@@ -68,12 +55,18 @@ def read_file():
         return old_data
     except Exception:
         logger.error("Can't read file bandwith.txt ")
+        return False
 
 
-def write_file(data):
+def write_file(data: dict) -> bool:
     """
-    # TODO: put this file in another location
-    this funtion manage a file where is saved the last bandwidth, and the time it was taken
+    This function manage a file where is saved the last bandwidth, and the time it was taken
     """
-    with open("bandwidth.txt", "w") as file:
-        json.dump(data, file)
+    try:
+        with open("bandwidth.txt", "w") as file:
+            json.dump(data, file)
+            return True
+    except Exception:
+        logger.error("Error saving bandwidth data...")
+        logger.error(traceback.format_exc())
+        return False
