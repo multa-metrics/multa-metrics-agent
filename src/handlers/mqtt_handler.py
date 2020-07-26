@@ -2,17 +2,15 @@ from concurrent.futures import Future
 import json
 import time
 import sys
-import threading
 import traceback
 
 from AWSIoTDeviceDefenderAgentSDK import collector
-from awscrt import io, mqtt, auth, http
+from awscrt import io, mqtt
 from awsiot import iotshadow, mqtt_connection_builder
 
 # from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 
 from src.handlers.logging_handler import Logger
-from src.handlers.utils import ApplicationHandler
 from src.settings.app import DEVICE_NAME
 from src.settings.mqtt import (
     DEVICE_ENDPOINT,

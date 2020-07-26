@@ -46,7 +46,7 @@ def get_time_series_system_metrics():
         "temp_info": data_handler.get_temperature_info(detailed=True),
         "boot_time_info": data_handler.get_boottime_info(detailed=True),
         # "network_info": data_handler.get_network_info(),
-        "bw_info": data_handler.get_bandwidth_usage(detailed=True),
+        # "bw_info": data_handler.get_bandwidth_usage(detailed=True),
     }
     return return_dict
 
@@ -62,7 +62,7 @@ def get_real_time_data_system_metrics():
         "battery_info": {},
         "fans_info": {},
         # "network_info": data_handler.get_network_info(),
-        "bw_info": data_handler.get_bandwidth_usage(detailed=True),
+        # "bw_info": data_handler.get_bandwidth_usage(detailed=True),
     }
     return return_dict
 

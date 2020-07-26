@@ -3,7 +3,7 @@ import requests
 import time
 import traceback
 
-from src.settings.app import ACCOUNT_TOKEN, AGENT_VERSION, DEVICE_NAME
+from src.settings.app import API_KEY, AGENT_VERSION, DEVICE_NAME
 from src.settings.registration import *
 from src.settings.mqtt import DEVICE_PEM_FILE, DEVICE_PRIVATE_KEY_FILE, DEVICE_PUBLIC_KEY_FILE, ROOTCA_CERTIFICATE_FILE
 from src.handlers.logging_handler import Logger
@@ -26,8 +26,8 @@ def register_agent():
                 logger.info("Registration was successful!")
                 break
         elif registration_data is False:
-            logger.error("Breaking registration loop, registration failed!")
-            break
+            logger.error("Registration failed! Retrying in a minute...")
+            time.sleep(60)
         else:
             time.sleep(60)
 
@@ -38,30 +38,26 @@ class RegistrationHandler:
 
     @staticmethod
     def register():
-        data = dict(thingName=DEVICE_NAME, version=AGENT_VERSION, accountToken=ACCOUNT_TOKEN)
-        headers = {"Authorization": f"Bearer {ACCOUNT_TOKEN}", "Content-Type": "application/json"}
+        data = dict(thingName=DEVICE_NAME, version=AGENT_VERSION)
+        headers = {"Authorization": f"ApiKey {API_KEY}", "Content-Type": "application/json"}
         try:
             response = requests.post(url=DEVICE_CONFIGURATION_URL, data=json.dumps(data), headers=headers)
             response.raise_for_status()
         except requests.HTTPError:
             logger.error("Something went wrong with registration...")
-            logger.error(traceback.format_exc())
-            if response.status_code == 400 and response.json()["failureCode"] == DEVICE_INVALID_DATA:
+            if response.status_code == 400:
                 logger.error("Invalid data passed when creating thing...")
+                logger.error(response.json().get("error"))
                 return False
             elif response.status_code == 401:
                 logger.error(
                     "Device registration is unauthorized... Check if your account has reached maximum number of agents"
                 )
+                logger.error(response.json().get("error"))
                 return False
-            elif response.status_code == 500 and response.json()["failureCode"] == DEVICE_ALREADY_REGISTERED_ERROR:
-                logger.error("Device is already registered!")
-                return False
-            elif response.status_code == 500 and response.json()["failureCode"] == DEVICE_REGISTRATION_PROCESS_ERROR:
-                logger.error("Device Type does not exist...")
-                return False
-            elif response.status_code == 500 and response.json()["failureCode"] == DEVICE_REGISTRATION_UNKNOWN_ERROR:
-                logger.error("Device Type does not exist...")
+            elif response.status_code == 500:
+                logger.error("Something went wrong during registration...")
+                logger.error(response.json().get("error"))
                 return False
             else:
                 return None
