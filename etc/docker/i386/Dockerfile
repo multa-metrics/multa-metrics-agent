@@ -11,9 +11,6 @@ RUN set -ex \
     && apt-get update
 
 RUN set -ex \
-    && apt-get install -y python-dbus cmake libssl-dev
-
-RUN set -ex \
     && pythonDeps=" \
         python3-dev \
         build-essential \
@@ -23,13 +20,13 @@ RUN set -ex \
         libcairo2-dev \
         gir1.2-gtk-3.0 \
         python3-gi \
+        python-dbus \
     " \
     \
-    && apt-get install -y --no-install-recommends $pythonDeps
+    && apt-get install -y --no-install-recommends $pythonDeps \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /device
-RUN mkdir /device/credentials
-RUN mkdir /device/credentials/certificates
+RUN mkdir /device && mkdir /device/credentials && mkdir /device/credentials/certificates
 
 WORKDIR /src
 ADD ./ /src
@@ -48,6 +45,20 @@ VOLUME /sys:/sys:ro
 VOLUME /:/rootfs:ro
 VOLUME /var/run:/var/run:rw
 VOLUME /proc:/prochost:ro
+
+RUN set -ex \
+    && pythonDeps=" \
+            python3-dev \
+            build-essential \
+            pkg-config \
+            libdbus-glib-1-dev \
+            libgirepository1.0-dev \
+            libcairo2-dev \
+            gir1.2-gtk-3.0 \
+            python3-gi \
+        " \
+        \
+    && apt-get remove -y $pythonDeps
 
 # HEALTHCHECK --start-period=120s --interval=60s --retries=1 CMD curl --fail http://127.0.0.1:5000/api/ || exit 1
 
