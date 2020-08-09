@@ -2,22 +2,21 @@ from concurrent.futures import Future
 import json
 import time
 import sys
-import threading
 import traceback
 
 from AWSIoTDeviceDefenderAgentSDK import collector
-from awscrt import io, mqtt, auth, http
+from awscrt import io, mqtt
 from awsiot import iotshadow, mqtt_connection_builder
 
 # from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 
 from src.handlers.logging_handler import Logger
-from src.handlers.utils import ApplicationHandler
-from src.settings.app import DEVICE_NAME
+from src.handlers.utils import get_device_name
 from src.settings.mqtt import (
     DEVICE_ENDPOINT,
     DEVICE_PEM_FILE,
     DEVICE_PRIVATE_KEY_FILE,
+    DEVICE_DEFENDER_TOPIC,
     MQTT_CONNECTION_RETURN_CODE_SETTING,
     MQTT_QOS_SETTING,
     ROOTCA_CERTIFICATE_FILE,
@@ -39,10 +38,12 @@ def mqtt_publish_v2(mqtt_connection_object_v2, topic: str, payload: dict):
         return True
 
 
-def mqtt_device_defender_publish_v2(mqtt_connection_object_v2, topic: str):
-    logger.info("Publishing to AWS IoT")
+def mqtt_device_defender_publish_v2(mqtt_connection_object_v2) -> bool:
+    logger.info("Publishing to AWS IoT Device Defender")
     metrics_collector = collector.Collector(short_metrics_names=False)
     metric = metrics_collector.collect_metrics()
+    DEVICE_NAME = get_device_name()
+    topic = DEVICE_DEFENDER_TOPIC.format(device_name=DEVICE_NAME)
     try:
         mqtt_connection_object_v2.publish(topic=topic, payload=metric.to_json_string(), qos=MQTT_QOS_SETTING)
     except Exception:
@@ -53,11 +54,12 @@ def mqtt_device_defender_publish_v2(mqtt_connection_object_v2, topic: str):
         return True
 
 
-def mqtt_shadow_publish_v2(shadow_client, device_name, data):
+def mqtt_shadow_publish_v2(shadow_client, data):
     logger.info("Updating AWS IoT Device Shadow...")
+    DEVICE_NAME = get_device_name()
     try:
         shadow_client.publish_update_shadow(
-            request=iotshadow.UpdateShadowRequest(thing_name=device_name, state=iotshadow.ShadowState(reported=data,)),
+            request=iotshadow.UpdateShadowRequest(thing_name=DEVICE_NAME, state=iotshadow.ShadowState(reported=data,)),
             qos=MQTT_QOS_SETTING,
         )
     except Exception:
@@ -69,6 +71,7 @@ def mqtt_shadow_publish_v2(shadow_client, device_name, data):
 
 
 def mqtt_shadow_update_subscribe_v2(shadow_client):
+    DEVICE_NAME = get_device_name()
     logger.info("Subscribing to Update responses...")
     try:
         update_accepted_subscribed_future, _ = shadow_client.subscribe_to_update_shadow_accepted(
@@ -111,6 +114,7 @@ class MqttClientV2:
         self.event_loop_group = io.EventLoopGroup(1)
         self.host_resolver = io.DefaultHostResolver(self.event_loop_group)
         self.client_bootstrap = io.ClientBootstrap(self.event_loop_group, self.host_resolver)
+        self.device_name = get_device_name()
         self.mqtt_connection = None
 
     def connect(self):
@@ -124,12 +128,12 @@ class MqttClientV2:
                 ca_filepath=ROOTCA_CERTIFICATE_FILE,
                 on_connection_interrupted=self.on_connection_interrupted,
                 on_connection_resumed=self.on_connection_resumed,
-                client_id=DEVICE_NAME,
+                client_id=self.device_name,
                 clean_session=False,
                 keep_alive_secs=6,
             )
 
-            logger.info(f"Connecting to AWS IoT endpoint {DEVICE_ENDPOINT} with client ID: {DEVICE_NAME}")
+            logger.info(f"Connecting to AWS IoT endpoint {DEVICE_ENDPOINT} with client ID: {self.device_name}")
             connect_future = mqtt_connection.connect()
 
             logger.info("Initializing AWS IoT Shadow client")
@@ -149,6 +153,7 @@ class MqttClientV2:
     @staticmethod
     def shadow_subscribe(shadow_client):
         logger.info("Subscribing to Update responses...")
+        DEVICE_NAME = get_device_name()
         update_accepted_subscribed_future, _ = shadow_client.subscribe_to_update_shadow_accepted(
             request=iotshadow.UpdateShadowSubscriptionRequest(thing_name=DEVICE_NAME),
             qos=MQTT_QOS_SETTING,

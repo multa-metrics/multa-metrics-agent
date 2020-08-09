@@ -1,4 +1,3 @@
-import json
 import schedule
 import sys
 import time
@@ -14,19 +13,11 @@ from src.handlers.mqtt_handler import (
     mqtt_shadow_update_subscribe_v2,
 )
 from src.handlers.registration_handler import RegistrationHandler, register_agent
-from src.handlers.utils import flatten_dictionary
 
-from src.settings.app import DEVICE_NAME, DEVICE_SYNC_TIME
-from src.settings.mqtt import TELEMETRY_SYSTEM_TOPIC, DEVICE_DEFENDER_TOPIC
-
-from AWSIoTDeviceDefenderAgentSDK import collector
+from src.settings.app import DEVICE_SYNC_TIME
 
 logs_handler = Logger()
 logger = logs_handler.get_logger()
-
-
-def test_job():
-    logger.info(f"Job at {time.time()}")
 
 
 if __name__ == "__main__":
@@ -47,24 +38,26 @@ if __name__ == "__main__":
         logger.info("Starting MQTT connection")
         mqtt_connection, shadow_client = mqtt_connect_v2()
     except Exception:
-        logger.error("Error initalizing MQTT Connection...")
+        logger.error("Error initalizing MQTT Connection... Exiting after a minute")
         logger.error(traceback.format_exc())
+        time.sleep(60)
         sys.exit(1)
 
     try:
         logger.info("Starting Shadow Subscripitions")
         mqtt_shadow_update_subscribe_v2(shadow_client=shadow_client)
     except Exception:
-        logger.error("Error subscribing to Shadow topics")
+        logger.error("Error subscribing to Shadow topics... Exiting after a minute")
         logger.error(traceback.format_exc())
+        time.sleep(60)
         sys.exit(1)
 
-    schedule.every(int(DEVICE_SYNC_TIME)).seconds.do(
-        mqtt_device_defender_publish_v2, mqtt_connection, topic=DEVICE_DEFENDER_TOPIC.format(device_name=DEVICE_NAME),
-    )
+    # logger.info("Scheduling Device Defender publishing...")
+    # schedule.every(DEVICE_SYNC_TIME).seconds.do(mqtt_device_defender_publish_v2, mqtt_connection)
 
-    schedule.every(int(DEVICE_SYNC_TIME)).seconds.do(
-        mqtt_shadow_publish_v2, shadow_client=shadow_client, device_name=DEVICE_NAME, data=get_shadow_data()
+    logger.info("Scheduling Device Shadow publishing...")
+    schedule.every(DEVICE_SYNC_TIME).seconds.do(
+        mqtt_shadow_publish_v2, shadow_client=shadow_client, data=get_shadow_data()
     )
 
     while True:
