@@ -1,8 +1,10 @@
 import json
+import os
 import sys
 import traceback
 
 from src.handlers.logging_handler import Logger
+from src.settings.mqtt import DEVICE_DATA_FILE
 
 logs_handler = Logger()
 logger = logs_handler.get_logger()
@@ -32,6 +34,24 @@ def flatten_dictionary(dd, separator="_", prefix=""):
         if isinstance(dd, dict)
         else {prefix: dd}
     )
+
+
+def get_device_name():
+    base_name = os.environ.get("DEVICE_NAME")
+    if base_name is None:
+        logger.error("DEVICE_NAME environment variable required! Exiting...")
+        sys.exit(1)
+
+    try:
+        with open(DEVICE_DATA_FILE) as json_file:
+            device_data = json.load(json_file)
+            device_organization = device_data.get("organizationId")
+            device_name = f"{device_organization}---{base_name}"
+            return device_name
+    except Exception:
+        logger.error(f"Unable to get device name for agent... Exiting! - {base_name}")
+        logger.error(traceback.format_exc())
+        sys.exit(1)
 
 
 def get_size(bytes_: int, suffix="B") -> str:

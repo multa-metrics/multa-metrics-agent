@@ -11,7 +11,7 @@ IMAGE_ARMV7 := balenalib/generic-armv7ahf-ubuntu-python:3.7.7-eoan-run
 PROJECT_I386 := multa-agent-i386
 PROJECT_ARMV7 := multa-agent-armv7
 
-VERSION=0.0.3
+VERSION=0.0.4
 
 login:
 	$(shell aws ecr get-login --no-include-email --region us-east-1)

@@ -14,15 +14,10 @@ from src.handlers.mqtt_handler import (
 )
 from src.handlers.registration_handler import RegistrationHandler, register_agent
 
-from src.settings.app import DEVICE_NAME, DEVICE_SYNC_TIME
-from src.settings.mqtt import DEVICE_DEFENDER_TOPIC
+from src.settings.app import DEVICE_SYNC_TIME
 
 logs_handler = Logger()
 logger = logs_handler.get_logger()
-
-
-def test_job():
-    logger.info(f"Job at {time.time()}")
 
 
 if __name__ == "__main__":
@@ -57,12 +52,12 @@ if __name__ == "__main__":
         time.sleep(60)
         sys.exit(1)
 
-    schedule.every(DEVICE_SYNC_TIME).seconds.do(
-        mqtt_device_defender_publish_v2, mqtt_connection, topic=DEVICE_DEFENDER_TOPIC.format(device_name=DEVICE_NAME),
-    )
+    # logger.info("Scheduling Device Defender publishing...")
+    # schedule.every(DEVICE_SYNC_TIME).seconds.do(mqtt_device_defender_publish_v2, mqtt_connection)
 
+    logger.info("Scheduling Device Shadow publishing...")
     schedule.every(DEVICE_SYNC_TIME).seconds.do(
-        mqtt_shadow_publish_v2, shadow_client=shadow_client, device_name=DEVICE_NAME, data=get_shadow_data()
+        mqtt_shadow_publish_v2, shadow_client=shadow_client, data=get_shadow_data()
     )
 
     while True:

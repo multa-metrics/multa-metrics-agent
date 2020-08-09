@@ -26,7 +26,7 @@ RUN set -ex \
     && apt-get install -y --no-install-recommends $pythonDeps \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /device && mkdir /device/credentials && mkdir /device/credentials/certificates
+RUN mkdir /device && mkdir /device/data && mkdir /device/credentials && mkdir /device/credentials/certificates
 
 WORKDIR /src
 ADD ./ /src

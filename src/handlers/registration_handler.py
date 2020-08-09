@@ -5,7 +5,7 @@ import traceback
 
 from src.settings.app import API_KEY, AGENT_VERSION, DEVICE_NAME
 from src.settings.registration import *
-from src.settings.mqtt import DEVICE_PEM_FILE, DEVICE_PRIVATE_KEY_FILE, DEVICE_PUBLIC_KEY_FILE, ROOTCA_CERTIFICATE_FILE
+from src.settings.mqtt import DEVICE_PEM_FILE, DEVICE_PRIVATE_KEY_FILE, DEVICE_PUBLIC_KEY_FILE, ROOTCA_CERTIFICATE_FILE, DEVICE_DATA_FILE
 from src.handlers.logging_handler import Logger
 
 logs_handler = Logger()
@@ -19,7 +19,10 @@ def register_agent():
             credentials_status = RegistrationHandler.save_credentials(
                 credentials_dictionary=registration_data["certificates"], root_ca=registration_data["rootCA"]
             )
-            if credentials_status is False:
+            organization_status = RegistrationHandler.save_device_data(
+                device_data_dictionary=registration_data["deviceData"]
+            )
+            if credentials_status is False or organization_status is False:
                 RegistrationHandler.clean_credentials()
                 raise RuntimeError
             else:
@@ -39,6 +42,10 @@ class RegistrationHandler:
     @staticmethod
     def register():
         data = dict(thingName=DEVICE_NAME, version=AGENT_VERSION)
+        if API_KEY is None:
+            logger.error("No API_KEY found for the device... Exiting registration...")
+            return False
+
         headers = {"Authorization": f"ApiKey {API_KEY}", "Content-Type": "application/json"}
         try:
             response = requests.post(url=DEVICE_CONFIGURATION_URL, data=json.dumps(data), headers=headers)
@@ -70,7 +77,7 @@ class RegistrationHandler:
             return response.json()
 
     @staticmethod
-    def save_credentials(credentials_dictionary, root_ca):
+    def save_credentials(credentials_dictionary: dict, root_ca: str) -> bool:
         try:
             logger.info("Saving certificate files...")
             with open(DEVICE_PEM_FILE, "w") as pem_certificate_file:
@@ -87,6 +94,20 @@ class RegistrationHandler:
             return False
         else:
             logger.info("Certificates saved correctly")
+            return True
+
+    @staticmethod
+    def save_device_data(device_data_dictionary: dict):
+        try:
+            logger.info("Saving device data file...")
+            with open(DEVICE_DATA_FILE, "w") as device_data_file:
+                json.dump(device_data_dictionary, device_data_file)
+        except Exception:
+            logger.error("Error saving device data file...")
+            logger.error(traceback.format_exc())
+            return False
+        else:
+            logger.info("Device data file saved correctly")
             return True
 
     @staticmethod
