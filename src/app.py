@@ -1,65 +1,31 @@
-import schedule
-import sys
+import os, sys
+sys.path.append("/workspaces/multa-metrics-agent")
+
+import json
 import time
-import traceback
+
+from src.controllers.hardware_data_collection import HardwareStatsCollect
+from src.models.shared_memory import SharedMemory
 
 
-from src.handlers.hardware_handler import get_shadow_data
-from src.handlers.logging_handler import Logger
-from src.handlers.mqtt_handler import (
-    mqtt_connect_v2,
-    mqtt_device_defender_publish_v2,
-    mqtt_shadow_publish_v2,
-    mqtt_shadow_update_subscribe_v2,
-)
-from src.handlers.registration_handler import RegistrationHandler, register_agent
+class Service:
+    def __init__(self):
+        self.shared_memory = SharedMemory()
 
-from src.settings.app import DEVICE_SYNC_TIME
+        self.hardware_stats_collection_controller = HardwareStatsCollect(shared_memory_instance=self.shared_memory)
+        
+        # TODO: Add views to retrieve data from Shared Memory.
+        # TODO: Add view to retrieve data and process to get Device Defender data.
 
-logs_handler = Logger()
-logger = logs_handler.get_logger()
+    def start(self):
+        self.hardware_stats_collection_controller.start()
 
 
 if __name__ == "__main__":
-    logger.info("Starting application!")
-
-    try:
-        if RegistrationHandler.check_credentials() is False:
-            logger.info("Unable to find device credentials, starting registration...")
-            register_agent()
-        else:
-            logger.info("Agent is already registered")
-
-    except RuntimeError:
-        logger.error("Error registering and saving credentials...")
-        sys.exit(1)
-
-    try:
-        logger.info("Starting MQTT connection")
-        mqtt_connection, shadow_client = mqtt_connect_v2()
-    except Exception:
-        logger.error("Error initalizing MQTT Connection... Exiting after a minute")
-        logger.error(traceback.format_exc())
-        time.sleep(60)
-        sys.exit(1)
-
-    try:
-        logger.info("Starting Shadow Subscripitions")
-        mqtt_shadow_update_subscribe_v2(shadow_client=shadow_client)
-    except Exception:
-        logger.error("Error subscribing to Shadow topics... Exiting after a minute")
-        logger.error(traceback.format_exc())
-        time.sleep(60)
-        sys.exit(1)
-
-    # logger.info("Scheduling Device Defender publishing...")
-    # schedule.every(DEVICE_SYNC_TIME).seconds.do(mqtt_device_defender_publish_v2, mqtt_connection)
-
-    logger.info("Scheduling Device Shadow publishing...")
-    schedule.every(DEVICE_SYNC_TIME).seconds.do(
-        mqtt_shadow_publish_v2, shadow_client=shadow_client, data=get_shadow_data()
-    )
+    service_handler = Service()
+    service_handler.start()
 
     while True:
-        schedule.run_pending()
-        time.sleep(1)
+        print(f"Analysis trace - {time.time()}")
+        print(service_handler.shared_memory.shared_memory)
+        time.sleep(5)

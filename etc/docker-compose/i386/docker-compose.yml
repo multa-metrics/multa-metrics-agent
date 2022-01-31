@@ -1,18 +1,8 @@
 version: "3"
 services:
-  multa-agent:
-    container_name: multa-agent
-    environment:
-      - DEVICE_NAME=multa-agent-compose-i386
-      - DEVICE_SYNC_TIME=10
-      - API_KEY=fc369ce4dfa955d6781325e42b28a3480f4f338d916876f736f907bbcb2b7f8f
+  multa-metrics-agent:
+    container_name: multa-metrics-agent
     image: 112646120612.dkr.ecr.us-east-1.amazonaws.com/multa-agent-i386:0.0.3
     network_mode: host
     privileged: true
     restart: always
-    volumes:
-    - device-data:/device
-
-volumes:
-  device-data:
-

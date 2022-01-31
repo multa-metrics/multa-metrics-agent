@@ -1,18 +1,14 @@
 venv/
 .idea/
 .DS_Store
-src/handlers/__pycache__/
-src/settings/__pycache__/
-
-src/local_test_manologomezborges.py
-
-src/local_test_u93.py
+__pycache__/
+.devcontainer/
+.vscode/
+.pyc
 
 certificate.pem
-
 private_key_key.priv
-
 public_key.pub
-
 root_ca.cert
-/src/device_data.json
+
+src/tests/sdks/aws-iot-device-defender-agent-sdk-python
